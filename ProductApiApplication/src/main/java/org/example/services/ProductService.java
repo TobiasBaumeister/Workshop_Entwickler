@@ -1,18 +1,16 @@
 package org.example.services;
 
 import java.util.List;
-import java.util.Optional;
-import org.example.database.model.Product;
+import org.example.dto.ProductDTO;
 
 public interface ProductService {
 
-  List<Product> getAllProducts();
+  List<ProductDTO> getAllProducts();
 
-  Optional<Product> getProductById(Long id);
+  ProductDTO getProductById(Long id);
 
-  Product createProduct(Product product);
+  ProductDTO createProduct(ProductDTO productDTO);
 
-  Product updateProduct(Long id, Product productDetails);
-
+  ProductDTO updateProduct(Long id, ProductDTO productDTO);
   void deleteProduct(Long id);
 }

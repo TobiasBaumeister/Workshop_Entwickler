@@ -1,51 +1,73 @@
 package org.example.services;
 
-import org.example.database.exception.ResourceNotFoundException;
+import java.util.List;
+import org.example.database.model.Category;
 import org.example.database.model.Product;
+import org.example.database.repository.CategoryRepository;
 import org.example.database.repository.ProductRepository;
+import org.example.dto.ProductDTO;
+import org.example.exception.ResourceNotFoundException;
+import org.example.rest.mapper.ProductMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProductServiceImpl implements ProductService{
 
   private final ProductRepository productRepository;
+  private final CategoryRepository categoryRepository;
+  private final ProductMapper productMapper;
 
   @Autowired
-  public ProductServiceImpl( ProductRepository productRepository){
+  public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository, ProductMapper productMapper) {
     this.productRepository = productRepository;
+    this.categoryRepository = categoryRepository;
+    this.productMapper = productMapper;
   }
 
   @Override
-  public List<Product> getAllProducts(){
-    return productRepository.findAll();
+  public List<ProductDTO> getAllProducts() {
+    List<Product> products = productRepository.findAll();
+    return productMapper.toDtoList(products);
   }
 
   @Override
-  public Optional<Product> getProductById(Long id){
-    return productRepository.findById(id);
-  }
-
-  @Override
-  public Product createProduct(Product product){
-    return productRepository.save(product);
-  }
-
-  @Override
-  public Product updateProduct(Long id, Product productDetails){
+  public ProductDTO getProductById(Long id) {
     Product product = productRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Produkt nicht gefunden mit der ID: " + id));
-
-    product.setName(productDetails.getName());
-    product.setPrice(productDetails.getPrice());
-    return productRepository.save(product);
+    return productMapper.toDto(product);
   }
 
   @Override
-  public void deleteProduct(Long id){
+  public ProductDTO createProduct(ProductDTO dto) {
+    Category category = categoryRepository.findById(dto.getCategoryId())
+        .orElseThrow(() -> new ResourceNotFoundException("Kategorie nicht gefunden mit der ID: " + dto.getCategoryId()));
+
+    Product product = productMapper.toEntity(dto);
+    product.setCategory(category);
+
+    Product savedProduct = productRepository.save(product);
+    return productMapper.toDto(savedProduct);
+  }
+
+  @Override
+  public ProductDTO updateProduct(Long id, ProductDTO dto) {
+    Product existingProduct = productRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Produkt nicht gefunden mit der ID: " + id));
+
+    Category category = categoryRepository.findById(dto.getCategoryId())
+        .orElseThrow(() -> new ResourceNotFoundException("Kategorie nicht gefunden mit der ID: " + dto.getCategoryId()));
+
+    existingProduct.setName(dto.getName());
+    existingProduct.setPrice(dto.getPrice());
+    existingProduct.setCategory(category);
+
+    Product updatedProduct = productRepository.save(existingProduct);
+    return productMapper.toDto(updatedProduct);
+  }
+
+  @Override
+  public void deleteProduct(Long id) {
     Product product = productRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Produkt nicht gefunden mit der ID: " + id));
     productRepository.delete(product);
