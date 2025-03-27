@@ -1,0 +1,6 @@
+*.db
+**/target/**
+.idea/
+
+!.mvn/wrapper/maven-wrapper.jar
+.vscode/
