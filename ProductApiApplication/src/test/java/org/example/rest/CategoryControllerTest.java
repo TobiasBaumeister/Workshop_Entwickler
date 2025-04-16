@@ -1,83 +1,97 @@
 package org.example.rest;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.List;
-import java.util.Optional;
+import org.example.database.model.Category;
+import org.example.database.repository.CategoryRepository;
+import org.example.database.repository.ProductRepository;
 import org.example.dto.CategoryDTO;
-import org.example.services.CategoryService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Transactional;
 
-@WebMvcTest(CategoryController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
 public class CategoryControllerTest {
 
   @Autowired
   private MockMvc mockMvc;
 
-  @MockBean
-  private CategoryService categoryService;
+  @Autowired
+  private ObjectMapper objectMapper;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  @Autowired
+  private CategoryRepository categoryRepository;
+
+  @Autowired
+  private ProductRepository productRepository;
+
+
+  @BeforeEach
+  void setUp() {
+    categoryRepository.deleteAll();
+  }
 
   @Test
   void testGetAllCategories() throws Exception {
-    List<CategoryDTO> categories = List.of(
-        new CategoryDTO() {{
-          setId(1L);
-          setName("Laptops");
-        }},
-        new CategoryDTO() {{
-          setId(2L);
-          setName("Phones");
-        }}
-    );
-
-    when(categoryService.getAllCategories()).thenReturn(categories);
+    Category cat1 = categoryRepository.save(new Category(null, "Laptops"));
+    Category cat2 = categoryRepository.save(new Category(null, "Phones"));
 
     mockMvc.perform(get("/api/v1/categories"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[0].name").value("Laptops"));
+        .andExpect(jsonPath("$[0].id").value(cat1.getId()))
+        .andExpect(jsonPath("$[0].name").value("Laptops"))
+        .andExpect(jsonPath("$[1].id").value(cat2.getId()))
+        .andExpect(jsonPath("$[1].name").value("Phones"));
   }
 
   @Test
-  void testCreateCategory() throws Exception { //TODO: Fehler
+  void testCreateCategory() throws Exception {
     CategoryDTO request = new CategoryDTO();
     request.setName("Tablets");
 
-    CategoryDTO response = new CategoryDTO();
-    response.setId(3L);
-    response.setName("Tablets");
-
-    when(categoryService.createCategory(any(CategoryDTO.class))).thenReturn(response);
-
-    String content = objectMapper.writeValueAsString(request);
-    System.out.println(content); // {"id":null,"name":"Tablets"}
-    mockMvc.perform(post("/api/v1/categories")
+    MvcResult result = mockMvc.perform(post("/api/v1/categories")
             .contentType(MediaType.APPLICATION_JSON)
-            .content(content))
+            .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.id").value(3L))
-        .andExpect(jsonPath("$.name").value("Tablets"));
+        .andExpect(jsonPath("$.id").isNotEmpty())
+        .andExpect(jsonPath("$.name").value("Tablets"))
+        .andReturn();
+
+    String responseString = result.getResponse().getContentAsString();
+    CategoryDTO createdDto = objectMapper.readValue(responseString, CategoryDTO.class);
+    Long createdId = createdDto.getId();
+
+    assertThat(categoryRepository.findById(createdId)).isPresent();
+    assertThat(categoryRepository.findById(createdId).get().getName()).isEqualTo("Tablets");
   }
 
   @Test
-  void testCreateCategoryWithEmptyName() throws Exception {
+  void testCreateCategoryWithEmptyName_ShouldFail() throws Exception {
     CategoryDTO request = new CategoryDTO();
+    request.setName("");
 
+    mockMvc.perform(post("/api/v1/categories")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest()); // Erwarte HTTP 400 wegen Validation
+
+    request.setName(null);
     mockMvc.perform(post("/api/v1/categories")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(request)))
@@ -86,30 +100,55 @@ public class CategoryControllerTest {
 
   @Test
   void testGetCategoryByIdFound() throws Exception {
-    CategoryDTO dto = new CategoryDTO();
-    dto.setId(1L);
-    dto.setName("Laptops");
+    Category savedCategory = categoryRepository.save(new Category(null, "Monitors"));
+    Long categoryId = savedCategory.getId();
 
-    when(categoryService.getCategoryById(1L)).thenReturn(Optional.of(dto));
-
-    mockMvc.perform(get("/api/v1/categories/1"))
+    mockMvc.perform(get("/api/v1/categories/" + categoryId))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.name").value("Laptops"));
+        .andExpect(jsonPath("$.id").value(categoryId))
+        .andExpect(jsonPath("$.name").value("Monitors"));
   }
 
   @Test
   void testGetCategoryByIdNotFound() throws Exception {
-    when(categoryService.getCategoryById(999L)).thenReturn(Optional.empty());
+    Long nonExistentId = 9999L;
+    assertThat(categoryRepository.findById(nonExistentId)).isNotPresent();
 
-    mockMvc.perform(get("/api/v1/categories/999"))
+    mockMvc.perform(get("/api/v1/categories/" + nonExistentId))
         .andExpect(status().isNotFound());
   }
 
   @Test
-  void testDeleteCategory() throws Exception {
-    doNothing().when(categoryService).deleteCategory(1L);
+  void testUpdateCategory() throws Exception {
+    Category category = new Category();
+    category.setName("Old Name");
+    Category savedCategory = categoryRepository.save(category);
+    Long categoryId = savedCategory.getId();
 
-    mockMvc.perform(delete("/api/v1/categories/1"))
+    CategoryDTO updateRequest = new CategoryDTO();
+    updateRequest.setName("New Updated Name");
+
+    mockMvc.perform(put("/api/v1/categories/" + categoryId)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(categoryId))
+        .andExpect(jsonPath("$.name").value("New Updated Name"));
+
+    assertThat(categoryRepository.findById(categoryId)).isPresent();
+    assertThat(categoryRepository.findById(categoryId).get().getName()).isEqualTo("New Updated Name");
+  }
+
+
+  @Test
+  void testDeleteCategory() throws Exception {
+    Category categoryToDelete = categoryRepository.save(new Category(null, "ToDelete"));
+    Long categoryId = categoryToDelete.getId();
+    assertThat(categoryRepository.findById(categoryId)).isPresent();
+
+    mockMvc.perform(delete("/api/v1/categories/" + categoryId))
         .andExpect(status().isNoContent());
+
+    assertThat(categoryRepository.findById(categoryId)).isNotPresent();
   }
 }
