@@ -1,4 +1,4 @@
-package org.example.services;
+package org.example.services.impl;
 
 import java.util.List;
 import java.util.Optional;
@@ -7,6 +7,7 @@ import org.example.database.repository.CategoryRepository;
 import org.example.dto.CategoryDTO;
 import org.example.exception.ResourceNotFoundException;
 import org.example.rest.mapper.CategoryMapper;
+import org.example.services.CategoryService;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -40,7 +41,7 @@ public class CategoryServiceImpl implements CategoryService {
   @Override
   public CategoryDTO updateCategory(Long id, CategoryDTO dto) {
     Category existingCategory = categoryRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Kategorie nicht gefunden mit der ID: " + dto.getId()));
+        .orElseThrow(() -> new ResourceNotFoundException("Kategorie nicht gefunden mit der ID: " + id));
     existingCategory.setName(dto.getName());
     Category updatedCategory = categoryRepository.save(existingCategory);
     return categoryMapper.toDto(updatedCategory);

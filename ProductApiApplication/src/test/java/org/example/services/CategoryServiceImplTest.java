@@ -1,119 +1,153 @@
 package org.example.services;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.Optional;
 import org.example.database.model.Category;
 import org.example.database.repository.CategoryRepository;
+import org.example.database.repository.ProductRepository;
 import org.example.dto.CategoryDTO;
 import org.example.exception.ResourceNotFoundException;
-import org.example.rest.mapper.CategoryMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
+
+@SpringBootTest
+@Transactional
 class CategoryServiceImplTest {
 
-  @Mock
+  @Autowired
+  private CategoryService categoryService;
+
+  @Autowired
   private CategoryRepository categoryRepository;
 
-  @Mock
-  private CategoryMapper categoryMapper;
+  @Autowired
+  private ProductRepository productRepository;
 
-  @InjectMocks
-  private CategoryServiceImpl categoryService;
+  private Category cat1;
+  private Category cat2;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
+    productRepository.deleteAll();
+    categoryRepository.deleteAll();
+
+    cat1 = categoryRepository.save(new Category(null, "Electronics"));
+    cat2 = categoryRepository.save(new Category(null, "Books"));
   }
 
   @Test
+  @DisplayName("getAllCategories should return all categories from DB")
   void testGetAllCategories() {
-    List<Category> categories = List.of(
-        new Category(1L, "Laptops"),
-        new Category(2L, "Phones")
-    );
-
-    List<CategoryDTO> categoryDTOs = List.of(
-        createCategoryDTO(1L, "Laptops"),
-        createCategoryDTO(2L, "Phones")
-    );
-
-    when(categoryRepository.findAll()).thenReturn(categories);
-    when(categoryMapper.toDtoList(categories)).thenReturn(categoryDTOs);
-
     List<CategoryDTO> result = categoryService.getAllCategories();
-    assertEquals(2, result.size());
-    assertEquals("Phones", result.get(1).getName());
+
+    assertThat(result).isNotNull();
+    assertThat(result).hasSize(2);
+    assertThat(result).extracting(CategoryDTO::getName)
+        .containsExactlyInAnyOrder("Electronics", "Books");
+    assertThat(result).extracting(CategoryDTO::getId)
+        .containsExactlyInAnyOrder(cat1.getId(), cat2.getId());
   }
 
   @Test
+  @DisplayName("getCategoryById should return category when found")
   void testGetCategoryById_Found() {
-    Category category = new Category(1L, "Laptops");
-    CategoryDTO dto = createCategoryDTO(1L, "Laptops");
+    Long idToFind = cat1.getId();
 
-    when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-    when(categoryMapper.toDto(category)).thenReturn(dto);
+    Optional<CategoryDTO> resultOpt = categoryService.getCategoryById(idToFind);
 
-    Optional<CategoryDTO> result = categoryService.getCategoryById(1L);
-
-    assertTrue(result.isPresent());
-    assertEquals("Laptops", result.get().getName());
+    assertThat(resultOpt).isPresent();
+    assertThat(resultOpt.get().getId()).isEqualTo(idToFind);
+    assertThat(resultOpt.get().getName()).isEqualTo("Electronics");
   }
 
   @Test
+  @DisplayName("getCategoryById should return empty Optional when not found")
   void testGetCategoryById_NotFound() {
-    when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
+    Long nonExistentId = 9999L;
 
-    Optional<CategoryDTO> result = categoryService.getCategoryById(99L);
-    assertTrue(result.isEmpty());
+    Optional<CategoryDTO> resultOpt = categoryService.getCategoryById(nonExistentId);
+
+    assertThat(resultOpt).isNotPresent();
   }
 
   @Test
+  @DisplayName("createCategory should save and return new category")
   void testCreateCategory() {
-    CategoryDTO request = createCategoryDTO(null, "Tablets");
-    Category entity = new Category(null, "Tablets");
-    Category saved = new Category(3L, "Tablets");
-    CategoryDTO response = createCategoryDTO(3L, "Tablets");
+    CategoryDTO newCategoryDto = new CategoryDTO();
+    newCategoryDto.setName("Software");
 
-    when(categoryMapper.toEntity(request)).thenReturn(entity);
-    when(categoryRepository.save(entity)).thenReturn(saved);
-    when(categoryMapper.toDto(saved)).thenReturn(response);
+    CategoryDTO createdDto = categoryService.createCategory(newCategoryDto);
 
-    CategoryDTO result = categoryService.createCategory(request);
-    assertEquals(3L, result.getId());
-    assertEquals("Tablets", result.getName());
+    assertThat(createdDto).isNotNull();
+    assertThat(createdDto.getId()).isNotNull();
+    assertThat(createdDto.getName()).isEqualTo("Software");
+
+    Optional<Category> savedCategoryOpt = categoryRepository.findById(createdDto.getId());
+    assertThat(savedCategoryOpt).isPresent();
+    assertThat(savedCategoryOpt.get().getName()).isEqualTo("Software");
   }
 
   @Test
+  @DisplayName("updateCategory should modify existing category")
+  void testUpdateCategory_Success() {
+    Long idToUpdate = cat1.getId();
+    CategoryDTO updateDto = new CategoryDTO();
+    updateDto.setName("Updated Electronics");
+
+    CategoryDTO updatedDto = categoryService.updateCategory(idToUpdate, updateDto);
+
+    assertThat(updatedDto).isNotNull();
+    assertThat(updatedDto.getId()).isEqualTo(idToUpdate);
+    assertThat(updatedDto.getName()).isEqualTo("Updated Electronics");
+
+    Optional<Category> updatedCategoryOpt = categoryRepository.findById(idToUpdate);
+    assertThat(updatedCategoryOpt).isPresent();
+    assertThat(updatedCategoryOpt.get().getName()).isEqualTo("Updated Electronics");
+    Optional<Category> unchangedCategoryOpt = categoryRepository.findById(cat2.getId());
+    assertThat(unchangedCategoryOpt).isPresent();
+    assertThat(unchangedCategoryOpt.get().getName()).isEqualTo("Books");
+  }
+
+  @Test
+  @DisplayName("updateCategory should throw ResourceNotFoundException for non-existent ID")
+  void testUpdateCategory_NotFound() {
+    Long nonExistentId = 9999L;
+    CategoryDTO updateDto = new CategoryDTO();
+    updateDto.setName("Does not matter");
+
+    assertThatThrownBy(() -> categoryService.updateCategory(nonExistentId, updateDto))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Kategorie nicht gefunden mit der ID: " + nonExistentId);
+  }
+
+
+  @Test
+  @DisplayName("deleteCategory should remove category from DB")
   void testDeleteCategory_Success() {
-    Category existing = new Category(1L, "Laptops");
-    when(categoryRepository.findById(1L)).thenReturn(Optional.of(existing));
-    doNothing().when(categoryRepository).delete(existing);
+    Long idToDelete = cat1.getId();
+    assertThat(categoryRepository.existsById(idToDelete)).isTrue();
 
-    assertDoesNotThrow(() -> categoryService.deleteCategory(1L));
+    categoryService.deleteCategory(idToDelete);
+
+    assertThat(categoryRepository.existsById(idToDelete)).isFalse();
+    assertThat(categoryRepository.existsById(cat2.getId())).isTrue();
   }
 
   @Test
+  @DisplayName("deleteCategory should throw ResourceNotFoundException for non-existent ID")
   void testDeleteCategory_NotFound() {
-    when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
+    Long nonExistentId = 9999L;
 
-    assertThrows(ResourceNotFoundException.class, () -> categoryService.deleteCategory(1L));
-  }
-
-  private CategoryDTO createCategoryDTO(Long id, String name) {
-    CategoryDTO dto = new CategoryDTO();
-    dto.setId(id);
-    dto.setName(name);
-    return dto;
+    assertThatThrownBy(() -> categoryService.deleteCategory(nonExistentId))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Kategorie nicht gefunden mit der ID: " + nonExistentId);
   }
 }

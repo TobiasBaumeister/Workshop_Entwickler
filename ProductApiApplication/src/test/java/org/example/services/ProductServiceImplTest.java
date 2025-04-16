@@ -1,11 +1,10 @@
 package org.example.services;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.example.database.model.Category;
@@ -14,159 +13,180 @@ import org.example.database.repository.CategoryRepository;
 import org.example.database.repository.ProductRepository;
 import org.example.dto.ProductDTO;
 import org.example.exception.ResourceNotFoundException;
-import org.example.rest.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
+
+@SpringBootTest
+@Transactional
 class ProductServiceImplTest {
 
-  @Mock
+  @Autowired
+  private ProductService productService;
+
+  @Autowired
   private ProductRepository productRepository;
 
-  @Mock
+  @Autowired
   private CategoryRepository categoryRepository;
 
-  @Mock
-  private ProductMapper productMapper;
-
-  @InjectMocks
-  private ProductServiceImpl productService;
+  private Category category1;
+  private Category category2;
+  private Product product1;
+  private Product product2;
+  private Product product3;
 
   @BeforeEach
   void setUp() {
-    MockitoAnnotations.openMocks(this);
+    productRepository.deleteAll();
+    categoryRepository.deleteAll();
+
+    category1 = categoryRepository.save(new Category(null, "Electronics"));
+    category2 = categoryRepository.save(new Category(null, "Books"));
+
+    product1 = new Product(null, "Laptop", 1200.00, category1);
+    product2 = new Product(null, "Keyboard", 75.50, category1);
+    product3 = new Product(null, "Java Guide", 45.00, category2);
+
+    productRepository.saveAll(Arrays.asList(product1, product2, product3));
   }
 
   @Test
   void testGetAllProducts() {
-    List<Product> products = List.of(
-        new Product(1L, "Laptop", 999.99, new Category(1L, "Laptops")),
-        new Product(2L, "Phone", 499.99, new Category(2L, "Phones"))
-    );
-
-    List<ProductDTO> productDTOs = List.of(
-        createProductDTO(1L, "Laptop", 999.99, 1L, "Laptops"),
-        createProductDTO(2L, "Phone", 499.99, 2L, "Phones")
-    );
-
-    when(productRepository.findAll()).thenReturn(products);
-    when(productMapper.toDtoList(products)).thenReturn(productDTOs);
-
     List<ProductDTO> result = productService.getAllProducts();
 
-    assertEquals(2, result.size());
-    assertEquals("Laptop", result.get(0).getName());
+    assertThat(result).isNotNull().hasSize(3);
+    assertThat(result).extracting(ProductDTO::getName)
+        .containsExactlyInAnyOrder("Laptop", "Keyboard", "Java Guide");
   }
 
   @Test
   void testGetProductById_Found() {
-    Product product = new Product(1L, "Laptop", 999.99, new Category(1L, "Laptops"));
-    ProductDTO dto = createProductDTO(1L, "Laptop", 999.99, 1L, "Laptops");
+    Long idToFind = product1.getId();
 
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
-    when(productMapper.toDto(product)).thenReturn(dto);
+    ProductDTO resultDto = productService.getProductById(idToFind);
 
-    ProductDTO result = productService.getProductById(1L);
-    assertEquals("Laptop", result.getName());
+    assertThat(resultDto).isNotNull();
+    assertThat(resultDto.getId()).isEqualTo(idToFind);
+    assertThat(resultDto.getName()).isEqualTo("Laptop");
+    assertThat(resultDto.getPrice()).isCloseTo(1200.00, within(0.01));
+    assertThat(resultDto.getCategoryId()).isEqualTo(category1.getId());
   }
 
   @Test
   void testGetProductById_NotFound() {
-    when(productRepository.findById(1L)).thenReturn(Optional.empty());
+    Long nonExistentId = 9999L;
 
-    assertThrows(ResourceNotFoundException.class, () -> productService.getProductById(1L));
+    assertThatThrownBy(() -> productService.getProductById(nonExistentId))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Produkt nicht gefunden mit der ID: " + nonExistentId);
   }
 
   @Test
-  void testCreateProduct() {
-    ProductDTO inputDto = createProductDTO(null, "Tablet", 299.99, 1L, null);
-    Category category = new Category(1L, "Tablets");
-    Product product = new Product(null, "Tablet", 299.99, category);
-    Product saved = new Product(3L, "Tablet", 299.99, category);
-    ProductDTO resultDto = createProductDTO(3L, "Tablet", 299.99, 1L, "Tablets");
+  void testCreateProduct_Success() {
+    ProductDTO newProductDto = new ProductDTO();
+    newProductDto.setName("New Mouse");
+    newProductDto.setPrice(25.99);
+    newProductDto.setCategoryId(category1.getId());
 
-    when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-    when(productMapper.toEntity(inputDto)).thenReturn(product);
-    when(productRepository.save(product)).thenReturn(saved);
-    when(productMapper.toDto(saved)).thenReturn(resultDto);
+    ProductDTO createdDto = productService.createProduct(newProductDto);
 
-    ProductDTO result = productService.createProduct(inputDto);
-    assertEquals(3L, result.getId());
-    assertEquals("Tablet", result.getName());
-    assertEquals("Tablets", result.getCategoryName());
+    assertThat(createdDto).isNotNull();
+    assertThat(createdDto.getId()).isNotNull();
+    assertThat(createdDto.getName()).isEqualTo("New Mouse");
+    assertThat(createdDto.getPrice()).isCloseTo(25.99, within(0.01));
+    assertThat(createdDto.getCategoryId()).isEqualTo(category1.getId());
+
+    Optional<Product> savedProductOpt = productRepository.findById(createdDto.getId());
+    assertThat(savedProductOpt).isPresent();
+    assertThat(savedProductOpt.get().getName()).isEqualTo("New Mouse");
+    assertThat(savedProductOpt.get().getCategory().getId()).isEqualTo(category1.getId());
   }
 
   @Test
   void testCreateProduct_CategoryNotFound() {
-    ProductDTO inputDto = createProductDTO(null, "Tablet", 299.99, 99L, null);
+    Long nonExistentCategoryId = 8888L;
+    ProductDTO newProductDto = new ProductDTO();
+    newProductDto.setName("Product with invalid category");
+    newProductDto.setPrice(10.0);
+    newProductDto.setCategoryId(nonExistentCategoryId);
 
-    when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
-
-    assertThrows(ResourceNotFoundException.class, () -> productService.createProduct(inputDto));
+    assertThatThrownBy(() -> productService.createProduct(newProductDto))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Kategorie nicht gefunden mit der ID: " + nonExistentCategoryId);
   }
 
   @Test
-  void testUpdateProduct() {
-    ProductDTO inputDto = createProductDTO(null, "Updated Laptop", 1599.99, 1L, null);
-    Category category = new Category(1L, "Laptops");
-    Product existing = new Product(1L, "Old Laptop", 1099.99, category);
-    Product updated = new Product(1L, "Updated Laptop", 1599.99, category);
-    ProductDTO resultDto = createProductDTO(1L, "Updated Laptop", 1599.99, 1L, "Laptops");
+  void testUpdateProduct_Success() {
+    Long idToUpdate = product2.getId();
+    Category newCategory = category2;
+    ProductDTO updateDto = new ProductDTO();
+    updateDto.setName("Updated Keyboard");
+    updateDto.setPrice(80.00);
+    updateDto.setCategoryId(newCategory.getId());
 
-    when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
-    when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
-    when(productRepository.save(existing)).thenReturn(updated);
-    when(productMapper.toDto(updated)).thenReturn(resultDto);
+    ProductDTO updatedDto = productService.updateProduct(idToUpdate, updateDto);
 
-    ProductDTO result = productService.updateProduct(1L, inputDto);
-    assertEquals("Updated Laptop", result.getName());
-    assertEquals(1599.99, result.getPrice());
+    assertThat(updatedDto).isNotNull();
+    assertThat(updatedDto.getId()).isEqualTo(idToUpdate);
+    assertThat(updatedDto.getName()).isEqualTo("Updated Keyboard");
+    assertThat(updatedDto.getPrice()).isCloseTo(80.00, within(0.01));
+    assertThat(updatedDto.getCategoryId()).isEqualTo(newCategory.getId());
+
+    Optional<Product> updatedProductOpt = productRepository.findById(idToUpdate);
+    assertThat(updatedProductOpt).isPresent();
+    assertThat(updatedProductOpt.get().getName()).isEqualTo("Updated Keyboard");
+    assertThat(updatedProductOpt.get().getPrice()).isCloseTo(80.00, within(0.01));
+    assertThat(updatedProductOpt.get().getCategory().getId()).isEqualTo(newCategory.getId());
   }
 
   @Test
   void testUpdateProduct_ProductNotFound() {
-    ProductDTO dto = createProductDTO(null, "Whatever", 10.0, 1L, null);
-    when(productRepository.findById(1L)).thenReturn(Optional.empty());
+    Long nonExistentProductId = 9999L;
+    ProductDTO updateDto = new ProductDTO();
+    updateDto.setName("Does not matter");
+    updateDto.setPrice(1.0);
+    updateDto.setCategoryId(category1.getId());
 
-    assertThrows(ResourceNotFoundException.class, () -> productService.updateProduct(1L, dto));
+    assertThatThrownBy(() -> productService.updateProduct(nonExistentProductId, updateDto))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Produkt nicht gefunden mit der ID: " + nonExistentProductId);
   }
 
   @Test
   void testUpdateProduct_CategoryNotFound() {
-    ProductDTO dto = createProductDTO(null, "Whatever", 10.0, 99L, null);
-    Product existing = new Product(1L, "Something", 100.0, new Category(1L, "Old"));
+    Long idToUpdate = product1.getId();
+    Long nonExistentCategoryId = 8888L;
+    ProductDTO updateDto = new ProductDTO();
+    updateDto.setName("Laptop with invalid category");
+    updateDto.setPrice(1250.0);
+    updateDto.setCategoryId(nonExistentCategoryId);
 
-    when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
-    when(categoryRepository.findById(99L)).thenReturn(Optional.empty());
-
-    assertThrows(ResourceNotFoundException.class, () -> productService.updateProduct(1L, dto));
+    assertThatThrownBy(() -> productService.updateProduct(idToUpdate, updateDto))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Kategorie nicht gefunden mit der ID: " + nonExistentCategoryId);
   }
 
   @Test
-  void testDeleteProduct() {
-    Product existing = new Product(1L, "Laptop", 999.99, new Category(1L, "Laptops"));
-    when(productRepository.findById(1L)).thenReturn(Optional.of(existing));
-    doNothing().when(productRepository).delete(existing);
+  void testDeleteProduct_Success() {
+    Long idToDelete = product3.getId();
+    assertThat(productRepository.existsById(idToDelete)).isTrue();
 
-    assertDoesNotThrow(() -> productService.deleteProduct(1L));
+    productService.deleteProduct(idToDelete);
+
+    assertThat(productRepository.existsById(idToDelete)).isFalse();
+    assertThat(productRepository.count()).isEqualTo(2);
   }
 
   @Test
   void testDeleteProduct_NotFound() {
-    when(productRepository.findById(1L)).thenReturn(Optional.empty());
-    assertThrows(ResourceNotFoundException.class, () -> productService.deleteProduct(1L));
-  }
+    Long nonExistentId = 9999L;
 
-  private ProductDTO createProductDTO(Long id, String name, Double price, Long categoryId, String categoryName) {
-    ProductDTO dto = new ProductDTO();
-    dto.setId(id);
-    dto.setName(name);
-    dto.setPrice(price);
-    dto.setCategoryId(categoryId);
-    dto.setCategoryName(categoryName);
-    return dto;
+    assertThatThrownBy(() -> productService.deleteProduct(nonExistentId))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Produkt nicht gefunden mit der ID: " + nonExistentId);
   }
 }

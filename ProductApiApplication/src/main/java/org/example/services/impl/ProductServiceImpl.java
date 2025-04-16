@@ -1,4 +1,4 @@
-package org.example.services;
+package org.example.services.impl;
 
 import java.util.List;
 import org.example.database.model.Category;
@@ -8,11 +8,12 @@ import org.example.database.repository.ProductRepository;
 import org.example.dto.ProductDTO;
 import org.example.exception.ResourceNotFoundException;
 import org.example.rest.mapper.ProductMapper;
+import org.example.services.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ProductServiceImpl implements ProductService{
+public class ProductServiceImpl implements ProductService {
 
   private final ProductRepository productRepository;
   private final CategoryRepository categoryRepository;
