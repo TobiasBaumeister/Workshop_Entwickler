@@ -2,7 +2,7 @@
 
 ## Zielsetzung
 
-Für den  [ProductExportServiceImpl](../../ProductApiApplication/src/main/java/org/example/services/impl/ProductExportServiceImpl.java) wurde eine
+Für den [ProductExportServiceImpl](../../ProductApiApplication/src/main/java/org/example/services/impl/ProductExportServiceImpl.java) wurde eine
 zugehörige Testklasse [ProductExportServiceImplTest](../../ProductApiApplication/src/test/java/org/example/services/ProductExportServiceImplTest.java)
 erstellt.
 
