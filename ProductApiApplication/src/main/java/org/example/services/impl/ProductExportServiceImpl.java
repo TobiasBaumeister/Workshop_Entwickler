@@ -1,5 +1,6 @@
 package org.example.services.impl;
 
+import java.util.Collections;
 import java.util.List;
 import org.example.database.model.Category;
 import org.example.database.model.Product;
@@ -17,33 +18,39 @@ public class ProductExportServiceImpl implements ProductExportService {
   private static final Logger log = LoggerFactory.getLogger(ProductExportServiceImpl.class);
   private final ProductRepository productRepository;
 
+  private static final String CSV_DELIMITER = ";";
+
   @Autowired
   public ProductExportServiceImpl(ProductRepository productRepository) {
     this.productRepository = productRepository;
   }
 
-
   @Override
   public String exportProductsByCategoryToCsv(Category category) {
-    if (category == null || category.getId() == null) {
-      log.error("Kategorie ist null oder hat keine ID.");
-      return "FEHLER: Ungültige Kategorie angegeben.";
-    }
-    log.info("Starte Export für Kategorie ID: {}", category.getId());
 
-    List<Product> products = fetchProductsForCategory(category.getId());
+    Long categoryId = category.getId();
+    log.info("Starte Export für Kategorie ID: {}", categoryId);
+
+    List<Product> products = fetchProductsForCategory(categoryId);
+
+    if (products.isEmpty()) {
+      log.info("Keine Produkte für Kategorie ID {} gefunden. Gebe nur Header zurück.", categoryId);
+      return "ID,Name,Preis,KategorieName\n";
+    }
 
     try {
       return buildCsvContent(products);
     } catch (Exception e) {
-      log.error("Technischer Fehler beim Erstellen des CSV-Inhalts für Kategorie ID {}: {}", category.getId(), e.getMessage());
+      log.error("Unerwarteter Fehler beim Erstellen des CSV für Kategorie ID {}: {}", categoryId, e.getMessage(), e);
       throw new RuntimeException("Fehler beim CSV-Export: " + e.getMessage(), e);
     }
   }
 
-
   @Transactional(readOnly = true)
   public List<Product> fetchProductsForCategory(Long categoryId) {
+    if (categoryId == null) {
+      return Collections.emptyList();
+    }
     log.debug("Lade Produkte für Kategorie ID: {}", categoryId);
     List<Product> products = productRepository.findByCategoryId(categoryId);
     log.info("{} Produkte für Kategorie ID {} gefunden.", products.size(), categoryId);
@@ -51,23 +58,26 @@ public class ProductExportServiceImpl implements ProductExportService {
   }
 
   private String buildCsvContent(List<Product> products) {
-    StringBuilder csvBuilder = new StringBuilder("ID,Name,Preis,KategorieName\n"); // Header
+    StringBuilder csvBuilder = new StringBuilder("ID,Name,Preis,KategorieName\n");
 
     for (Product product : products) {
       csvBuilder.append(formatToCsvLine(product));
     }
 
-    log.info("CSV-Inhalt erfolgreich erstellt.");
+    log.info("CSV-Inhalt erstellt (möglicherweise mit Formatierungsfehlern).");
     return csvBuilder.toString();
   }
 
   private String formatToCsvLine(Product product) {
     String categoryName = product.getCategory().getName();
 
-    return String.format("%d,%s,%.2f,%s\n",
+    return String.format("%d%s%s%s%.2f%s%s\n",
         product.getId(),
+        CSV_DELIMITER,
         product.getName(),
+        CSV_DELIMITER,
         product.getPrice(),
+        CSV_DELIMITER,
         categoryName
     );
   }

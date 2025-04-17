@@ -86,6 +86,9 @@ public class ProductExportServiceImplTest {
     assertEquals(normalizedExpectedCsv, normalizedActualCsv);
   }
 
+  /**
+   * TODO: Dieser Test schlägt aktuell fehl. Im Rahmen von Aufgabe 8 soll das korrigiert werden.
+   */
   @Test
   void exportProductsToCsv_null() {
     String expectedResult = "FEHLER: Ungültige Kategorie angegeben.";
