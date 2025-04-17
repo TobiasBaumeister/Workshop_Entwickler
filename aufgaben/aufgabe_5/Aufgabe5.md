@@ -1,5 +1,15 @@
 # Aufgabe 5
 
+## Bearbeitungshinweis
+
+Beim Bearbeiten dieser Aufgabe gilt folgende Vorgabe:
+
+- Es darf **kein eigener Code** manuell geschrieben werden.
+- Alle Codeabschnitte müssen **ausschließlich** durch den Chatbot generiert und von dort übernommen werden.
+- Auch Korrekturen und Anpassungen dürfen nur vom Chatbot vorgenommen werden.
+
+Ziel dieser Regel ist es, den gesamten Lösungsweg vollständig durch KI-Unterstützung abzubilden.
+
 ## Zielsetzung
 
 Der [ProductsStatisticsServiceImpl](../../ProductApiApplication/src/main/java/org/example/services/impl/ProductsStatisticsServiceImpl.java) berechnet

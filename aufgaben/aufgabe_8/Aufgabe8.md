@@ -1,34 +1,57 @@
 # Aufgabe 8
 
+## Bearbeitungshinweis
+
+Beim Bearbeiten dieser Aufgabe gilt folgende Vorgabe:
+
+- Es darf **kein eigener Code** manuell geschrieben werden.
+- Alle Codeabschnitte müssen **ausschließlich** durch den Chatbot generiert und von dort übernommen werden.
+- Auch Korrekturen und Anpassungen dürfen nur vom Chatbot vorgenommen werden.
+
+Ziel dieser Regel ist es, den gesamten Lösungsweg vollständig durch KI-Unterstützung abzubilden.
+
 ## Zielsetzung
 
-Für den [ProductExportServiceImpl](../../ProductApiApplication/src/main/java/org/example/services/impl/ProductExportServiceImpl.java) wurde eine
-zugehörige Testklasse [ProductExportServiceImplTest](../../ProductApiApplication/src/test/java/org/example/services/ProductExportServiceImplTest.java)
-erstellt.
+Erstelle eine **ausführliche Dokumentation** für die bestehenden Controller:
 
-Mehrere Tests schlagen derzeit fehl:
+- [CategoryController](../../ProductApiApplication/src/main/java/org/example/rest/CategoryController.java)
+- [ProductController](../../ProductApiApplication/src/main/java/org/example/rest/ProductController.java)
 
-- Der Test `exportProductsToCsv_ok` schlägt aus **zwei unterschiedlichen Gründen** fehl.
-- Auch der Test `exportProductsToCsv_null` schlägt aktuell fehl.
+Die Dokumentation soll für die spätere Projektdokumentation in **Confluence** verwendet werden.
 
-Deine Aufgabe ist es, die Fehlerquellen jeweils zu identifizieren, die Ursachen zu verstehen und die Implementierung so anzupassen, dass:
+Die Dokumentation soll auf folgender Confluence-Seite erstellt werden:  
+**[KI Workshop für Entwickler](https://jira.s-und-n.de/confluence/pages/viewpage.action?pageId=280428589)**
 
-- Alle Tests wieder erfolgreich (grün) laufen.
-- Die Lösung nicht nur im Testszenario funktioniert, sondern auch in der normalen Ausführung der Anwendung.
+Für jeden Controller wurde dort bereits eine eigene Seite unter eurem Namen vorbereitet.
 
 ## Anforderungen
 
-- Analysiere die Gründe für die Fehler in `exportProductsToCsv_ok` und `exportProductsToCsv_null`.
-- Alle im Testlauf auftretenden Probleme müssen vollständig behoben werden.
-- Die Anwendung soll auch außerhalb der Tests korrekt funktionieren.
-- Achte darauf, dass deine Korrekturen nicht nur für die Tests gelten, sondern auch für die reale Laufzeitumgebung (z. B. beim echten CSV-Export).
+- Dokumentiere die vorhandenen **REST-Endpunkte** der Controller vollständig.
+- Beschreibe für jeden Endpunkt:
+  - HTTP-Methode (z. B. `GET`, `POST`, `PUT`, `DELETE`)
+  - Pfad (z. B. `/api/products/{id}`)
+  - Zweck und Funktionalität des Endpunkts
+  - Erwartete Eingaben (Request-Parameter, Request-Body)
+  - Mögliche Antworten (Response-Body, HTTP-Statuscodes)
+  - Eventuelle Validierungsregeln oder Besonderheiten
+- Füge zu jedem Endpunkt **ein konkretes Beispiel** hinzu (Request und Response), idealerweise als JSON-Snippet.
 
 ## Erfolgskriterium
 
-- Alle Tests
-  in [`ProductExportServiceImplTest.java`](../../ProductApiApplication/src/test/java/org/example/services/ProductExportServiceImplTest.java) laufen
-  erfolgreich (grün).
-- Die Anwendung generiert in allen Fällen korrektes CSV-Format.
-- Fehlerbehandlungen (z. B. bei ungültigen Kategorien oder fehlenden Daten) funktionieren robust und einheitlich.
+- Die Dokumentation ist vollständig und strukturiert.
+- Beide Controller sind auf einer eigenen Seite im Confluence dokumentiert.
+- Die Seiten sind **ansprechend formatiert** (klare Überschriften, Abschnitte, Beispiele) und gut lesbar aufgebaut.
+- **Wichtig:** Die Formatierung wird ebenfalls **ausschließlich vom Chatbot** vorgegeben.  
+  Eigene manuelle Formatierungen sind nicht erlaubt.  
+  Falls Anpassungen an der Formatierung notwendig sind, muss die entsprechende Prompt-Formulierung an den Chatbot erfolgen.
+
+---
+
+### Hinweise
+
+- Orientiere dich an einem typischen API-Dokumentationsstil.
+- Nutze für die Beispiele realistische Produkt- und Kategoriedaten.
+- Achte auf vollständige Angaben, insbesondere bei Response-Objekten und möglichen Fehlermeldungen (z. B. `404 Not Found`, `400 Bad Request`).
+- Halte eine einheitliche und klare Strukturierung über beide Dokumentationsseiten hinweg ein.
 
 ---

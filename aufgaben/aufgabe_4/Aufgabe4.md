@@ -1,4 +1,25 @@
+# Wichtige Hinweise vor dem Start
+
+Bevor du mit der Bearbeitung der Aufgaben beginnst, stelle sicher, dass die Projektstruktur in deiner IDE korrekt eingerichtet ist:
+
+- Markiere den Ordner `src/main/java` als **Sources Root**:
+  - Rechtsklick auf den Ordner → **Mark Directory as** → **Sources Root**
+- Markiere den Ordner `src/test/java` als **Test Sources Root**:
+  - Rechtsklick auf den Ordner → **Mark Directory as** → **Test Sources Root**
+
+Diese Einstellungen sind notwendig, damit der Code und die Tests korrekt kompiliert und ausgeführt werden können.
+
 # Aufgabe 4
+
+## Bearbeitungshinweis
+
+Beim Bearbeiten dieser Aufgabe gilt folgende Vorgabe:
+
+- Es darf **kein eigener Code** manuell geschrieben werden.
+- Alle Codeabschnitte müssen **ausschließlich** durch den Chatbot generiert und von dort übernommen werden.
+- Auch Korrekturen und Anpassungen dürfen nur vom Chatbot vorgenommen werden.
+
+Ziel dieser Regel ist es, den gesamten Lösungsweg vollständig durch KI-Unterstützung abzubilden.
 
 ## Zielsetzung
 

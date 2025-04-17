@@ -53,7 +53,7 @@ public class ProductExportServiceImplTest {
   }
 
   /**
-   * TODO: Dieser Test schlägt aktuell fehl. Im Rahmen von Aufgabe 8 soll das korrigiert werden.
+   * TODO: Dieser Test schlägt aktuell fehl. Im Rahmen von Aufgabe 7 soll das korrigiert werden.
    */
   @Test
   void exportProductsToCsv_ok() {
@@ -87,7 +87,7 @@ public class ProductExportServiceImplTest {
   }
 
   /**
-   * TODO: Dieser Test schlägt aktuell fehl. Im Rahmen von Aufgabe 8 soll das korrigiert werden.
+   * TODO: Dieser Test schlägt aktuell fehl. Im Rahmen von Aufgabe 7 soll das korrigiert werden.
    */
   @Test
   void exportProductsToCsv_null() {

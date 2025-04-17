@@ -38,24 +38,68 @@ public class PriceCalculationServiceImpl implements PriceCalculationService {
   @Override
   public PriceDetailsDTO calculatePriceDetails(Long productId) {
     log.info("Calculating price details for product ID: {}", productId);
+    
+    Product product = loadProduct(productId);
+    BigDecimal basePrice = validateAndGetBasePrice(product);
+    DiscountInfo discountInfo = discountService.getDiscount(product);
+    
+    PriceCalculationResult calculationResult = applyDiscount(basePrice, discountInfo, productId);
+    
+    double taxRate = getValidatedTaxRate(product);
+    BigDecimal taxAmount = calculateTaxAmount(calculationResult.priceAfterDiscount(), taxRate);
+    BigDecimal finalPrice = calculationResult.priceAfterDiscount().add(taxAmount);
+    
+    log.info("Final calculated price for product ID {}: {}", productId, finalPrice);
+    
+    return new PriceDetailsDTO(
+        productId,
+        basePrice,
+        calculationResult.discountInfo(),
+        calculationResult.discountAmount(),
+        calculationResult.priceAfterDiscount(),
+        taxRate,
+        taxAmount,
+        finalPrice
+    );
+  }
 
-    // 1. Produkt laden
-    Product product = productRepository.findById(productId)
+  private Product loadProduct(Long productId) {
+    return productRepository.findById(productId)
         .orElseThrow(() -> new ResourceNotFoundException("Produkt nicht gefunden mit der ID: " + productId));
-    log.debug("Found product: {}", product.getName());
+  }
 
+  private BigDecimal validateAndGetBasePrice(Product product) {
     BigDecimal basePrice = BigDecimal.valueOf(product.getPrice()).setScale(2, RoundingMode.HALF_UP);
     if (basePrice.compareTo(ZERO) < 0) {
-      log.error("Product ID {} has negative price: {}", productId, basePrice);
-      throw new IllegalArgumentException("Produkt (ID: " + productId + ") hat einen negativen Preis: " + basePrice);
+      log.error("Product ID {} has negative price: {}", product.getId(), basePrice);
+      throw new IllegalArgumentException("Produkt (ID: " + product.getId() + ") hat einen negativen Preis: " + basePrice);
     }
-    log.debug("Base price for product ID {}: {}", productId, basePrice);
+    log.debug("Base price for product ID {}: {}", product.getId(), basePrice);
+    return basePrice;
+  }
 
-    // 2. Rabatt ermitteln
-    DiscountInfo discountInfo = discountService.getDiscount(product);
-    log.debug("Discount info for product ID {}: Type={}, Value={}", productId, discountInfo.type(), discountInfo.value());
+  private double getValidatedTaxRate(Product product) {
+    double taxRate = taxService.getTaxRate(product);
+    log.debug("Tax rate for product ID {}: {}", product.getId(), taxRate);
+    if (taxRate < 0) {
+      log.error("Tax service returned negative tax rate {} for product ID {}. Using 0.", taxRate, product.getId());
+      taxRate = 0;
+    }
+    return taxRate;
+  }
 
-    // 3. Rabatt anwenden
+  private BigDecimal calculateTaxAmount(BigDecimal priceAfterDiscount, double taxRate) {
+    if (taxRate <= 0) {
+      log.debug("No tax applied (tax rate is 0 or negative).");
+      return ZERO;
+    }
+    BigDecimal taxAmount = priceAfterDiscount.multiply(BigDecimal.valueOf(taxRate))
+        .setScale(2, RoundingMode.HALF_UP);
+    log.debug("Calculated tax amount: {}", taxAmount);
+    return taxAmount;
+  }
+
+  private PriceCalculationResult applyDiscount(BigDecimal basePrice, DiscountInfo discountInfo, Long productId) {
     BigDecimal discountAmount = ZERO;
     BigDecimal priceAfterDiscount = basePrice;
 
@@ -68,7 +112,6 @@ public class PriceCalculationServiceImpl implements PriceCalculationService {
           log.debug("Applied percentage discount: Amount={}, PriceAfter={}", discountAmount, priceAfterDiscount);
         } else {
           log.warn("Invalid percentage discount value {} for product ID {}, ignoring.", discountInfo.value(), productId);
-          // Kein gültiger Rabatt -> discountInfo auf NONE setzen für DTO
           discountInfo = new DiscountInfo(DiscountType.NONE, 0);
         }
         break;
@@ -94,39 +137,12 @@ public class PriceCalculationServiceImpl implements PriceCalculationService {
         break;
     }
 
-    // 4. Steuersatz ermitteln
-    double taxRate = taxService.getTaxRate(product);
-    log.debug("Tax rate for product ID {}: {}", productId, taxRate);
-    if (taxRate < 0) {
-      log.error("Tax service returned negative tax rate {} for product ID {}. Using 0.", taxRate, productId);
-      taxRate = 0;
-    }
-
-    // 5. Steuer berechnen (auf den Preis NACH Rabatt)
-    BigDecimal taxAmount = ZERO;
-    if (taxRate > 0) {
-      taxAmount = priceAfterDiscount.multiply(BigDecimal.valueOf(taxRate))
-          .setScale(2, RoundingMode.HALF_UP);
-      log.debug("Calculated tax amount: {}", taxAmount);
-    } else {
-      log.debug("No tax applied (tax rate is 0 or negative).");
-    }
-
-    // 6. Endpreis berechnen
-    BigDecimal finalPrice = priceAfterDiscount.add(taxAmount);
-    log.info("Final calculated price for product ID {}: {}", productId, finalPrice);
-
-    // 7. Ergebnis-DTO erstellen und zurückgeben
-    return new PriceDetailsDTO(
-        productId,
-        basePrice,
-        discountInfo,
-        discountAmount,
-        priceAfterDiscount,
-        taxRate,
-        taxAmount,
-        finalPrice
-    );
+    return new PriceCalculationResult(discountInfo, discountAmount, priceAfterDiscount);
   }
 
+  private record PriceCalculationResult(
+      DiscountInfo discountInfo,
+      BigDecimal discountAmount,
+      BigDecimal priceAfterDiscount
+  ) {}
 }
