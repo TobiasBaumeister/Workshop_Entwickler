@@ -19,7 +19,7 @@ Ziel ist es, mit dieser Testklasse eine **100 % Testabdeckung** für die Methode
         - Negativer Steuersatz.
 - Nutze für das Testen Frameworks wie JUnit 5 und Mockito.
 
-## Erfolgskriterium
+## Erfolgskriterien
 
 - Nach dem Ausführen der Tests mit der Funktion **[Run with Coverage](https://www.jetbrains.com/help/idea/code-coverage.html)** in IntelliJ IDEA soll
   eine **100 % Testabdeckung** erreicht werden.

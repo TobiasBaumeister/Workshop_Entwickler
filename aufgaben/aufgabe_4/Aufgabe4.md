@@ -17,7 +17,7 @@ umzusetzen.
   der [ProductServiceImpl](../../ProductApiApplication/src/main/java/org/example/services/impl/ProductServiceImpl.java).
 - Der Endpunkt soll sowohl das eigentliche Produkt als auch die zugehörige Kategorie berücksichtigen und entsprechend validieren.
 
-## Erfolgskriterium
+## Erfolgskriterien
 
 Am Ende sollen die folgenden bestehenden Tests erfolgreich (grün) durchlaufen:
 
