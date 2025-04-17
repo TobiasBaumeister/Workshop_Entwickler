@@ -14,7 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
+/**
+ * TODO: Diese Klasse kann im Rahmen von Aufgabe 5 komplett überarbeitet werden
+ */
 @Service
 @Transactional
 public class ProductsStatisticsServiceImpl implements ProductStatisticsService {

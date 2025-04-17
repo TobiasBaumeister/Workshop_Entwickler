@@ -112,6 +112,9 @@ public class ProductControllerTest {
         .andExpect(jsonPath("$.name").value("Single Product"));
   }
 
+  /**
+   * Test für Aufgabe 4
+   */
   @Test
   void testUpdateProduct() throws Exception {
     // Produkt anlegen

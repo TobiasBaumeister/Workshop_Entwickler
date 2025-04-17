@@ -53,18 +53,8 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   public ProductDTO updateProduct(Long id, ProductDTO dto) {
-    Product existingProduct = productRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Produkt nicht gefunden mit der ID: " + id));
-
-    Category category = categoryRepository.findById(dto.getCategoryId())
-        .orElseThrow(() -> new ResourceNotFoundException("Kategorie nicht gefunden mit der ID: " + dto.getCategoryId()));
-
-    existingProduct.setName(dto.getName());
-    existingProduct.setPrice(dto.getPrice());
-    existingProduct.setCategory(category);
-
-    Product updatedProduct = productRepository.save(existingProduct);
-    return productMapper.toDto(updatedProduct);
+    //TODO hier den Service für Aufgabe 4 implementieren
+    return null;
   }
 
   @Override

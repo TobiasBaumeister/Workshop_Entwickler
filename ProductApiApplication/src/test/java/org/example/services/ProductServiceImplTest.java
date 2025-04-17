@@ -119,6 +119,9 @@ class ProductServiceImplTest {
         .hasMessageContaining("Kategorie nicht gefunden mit der ID: " + nonExistentCategoryId);
   }
 
+  /**
+   * Test für Aufgabe 4
+   */
   @Test
   void testUpdateProduct_Success() {
     Long idToUpdate = product2.getId();
@@ -143,6 +146,9 @@ class ProductServiceImplTest {
     assertThat(updatedProductOpt.get().getCategory().getId()).isEqualTo(newCategory.getId());
   }
 
+  /**
+   * Test für Aufgabe 4
+   */
   @Test
   void testUpdateProduct_ProductNotFound() {
     Long nonExistentProductId = 9999L;
@@ -156,6 +162,9 @@ class ProductServiceImplTest {
         .hasMessageContaining("Produkt nicht gefunden mit der ID: " + nonExistentProductId);
   }
 
+  /**
+   * Test für Aufgabe 4
+   */
   @Test
   void testUpdateProduct_CategoryNotFound() {
     Long idToUpdate = product1.getId();
