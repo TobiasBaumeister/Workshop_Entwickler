@@ -18,7 +18,7 @@ Workshop_Entwickler/
 
 ## Prerequisites
 
-- Java JDK 17 or higher
+- Java JDK 21 or higher
 - Maven 3.8 or higher
 - Git
 - An IDE (IntelliJ IDEA recommended)
@@ -64,19 +64,6 @@ Workshop_Entwickler/
 - The project uses Spring Boot for the backend
 - Maven for dependency management
 - Follows REST API design principles
-- Includes workshop materials for learning
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contact
 
