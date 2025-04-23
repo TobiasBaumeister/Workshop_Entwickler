@@ -22,7 +22,8 @@ Die Dokumentation soll für die spätere Projektdokumentation in **Confluence** 
 Die Dokumentation soll auf folgender Confluence-Seite erstellt werden:  
 **[KI Workshop für Entwickler](https://jira.s-und-n.de/confluence/pages/viewpage.action?pageId=280428589)**
 
-Für jeden Controller wurde dort bereits eine eigene Seite unter eurem Namen vorbereitet.
+Für jeden von euch wurde dort bereits eine eigene Seite unter eurem Namen vorbereitet.
+Auf dieser könnt ihr die Dokumentation für beide Controller erstellen.
 
 ## Anforderungen
 
